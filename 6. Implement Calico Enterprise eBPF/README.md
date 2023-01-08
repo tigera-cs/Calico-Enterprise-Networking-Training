@@ -143,51 +143,71 @@ You should see an output similar to the following.
 ```
 -----
 
-# Checking if the eBPF is enforced. #
+11. Let's validate if eBPF is enforced. The validation can be done directly from the cluster node by SSHing into the node or via the calico-node pod. Let's do the validation via `control1` node and the `calico-node` pod running on `control1`
 
-This can be checked directly on the node or via the calico-node pod
-SSH in controller node if you are on bastion host.
-    ssh ubuntu@10.0.1.20
+**Validation from cluster node**
 
-***Method 1 = Node***
+ssh into `control1` node.
 
-    ubuntu@ip-10-0-1-20:~$ tc -s qdisc show | grep clsact -A 2
-    qdisc clsact ffff: dev ens160 parent ffff:fff1 
-     Sent 11334937500 bytes 75228997 pkt (dropped 0, overlimits 0 requeues 0) 
-     backlog 0b 0p requeues 0
-    
-    qdisc clsact ffff: dev calic1faebfe4cf parent ffff:fff1 
-     Sent 187308488 bytes 1696880 pkt (dropped 11, overlimits 0 requeues 0) 
-     backlog 0b 0p requeues 0
-    
-    qdisc clsact ffff: dev caliccba8bb4a6f parent ffff:fff1 
-     Sent 492459240 bytes 1736334 pkt (dropped 0, overlimits 0 requeues 0) 
-     backlog 0b 0p requeues 0
+```
+ssh control1
 
-   
-The output will be longer for the purpose of this example. We reduce the length of output.
- 
+```
+Run the following command.
 
-***Method 2 = Pod***
+```
+tc -s qdisc show | grep clsact -A 2
 
-Note use `$ kubectl get pods -n calico-system -o wide | grep node` to get the node calico node name running on `10.0.1.20`
+```
+You should see an output similar to the following.
 
-    ubuntu@ip-10-0-1-20:~$ kubectl exec -n calico-system calico-node-84r2t -- tc -s qdisc show | grep clsact -A 2
-    qdisc clsact ffff: dev ens5 parent ffff:fff1
-     Sent 21671393 bytes 63511 pkt (dropped 0, overlimits 0 requeues 0)
-     backlog 0b 0p requeues 0
-    
-    qdisc clsact ffff: dev tunl0 parent ffff:fff1
-     Sent 4752228 bytes 24358 pkt (dropped 0, overlimits 0 requeues 0)
-     backlog 0b 0p requeues 0
-    
-    qdisc clsact ffff: dev cali2896b5b2df4 parent ffff:fff1
-     Sent 2032243 bytes 1880 pkt (dropped 0, overlimits 0 requeues 0)
-     backlog 0b 0p requeues 0
-    
-    qdisc clsact ffff: dev calif903a7f3bc2 parent ffff:fff1
-     Sent 2507245 bytes 22767 pkt (dropped 46, overlimits 0 requeues 0)
-     backlog 0b 0p requeues 0
+```
+qdisc clsact ffff: dev ens5 parent ffff:fff1 
+ Sent 63121309 bytes 136851 pkt (dropped 0, overlimits 0 requeues 0) 
+ backlog 0b 0p requeues 0
+--
+qdisc clsact ffff: dev cali4b8da7b4d32 parent ffff:fff1 
+ Sent 0 bytes 0 pkt (dropped 0, overlimits 0 requeues 0) 
+ backlog 0b 0p requeues 0
+--
+qdisc clsact ffff: dev calia8fdb5c22c7 parent ffff:fff1 
+ Sent 6021246 bytes 4974 pkt (dropped 4, overlimits 0 requeues 0) 
+ backlog 0b 0p requeues 0
+--
+qdisc clsact ffff: dev cali28487a3174b parent ffff:fff1 
+ Sent 241539 bytes 1760 pkt (dropped 0, overlimits 0 requeues 0) 
+ backlog 0b 0p requeues 0
+--
+qdisc clsact ffff: dev cali511b65d1b41 parent ffff:fff1 
+ Sent 86681 bytes 521 pkt (dropped 0, overlimits 0 requeues 0) 
+ backlog 0b 0p requeues 0
+--
+qdisc clsact ffff: dev cali42e0d8fec43 parent ffff:fff1 
+ Sent 1170139 bytes 5487 pkt (dropped 0, overlimits 0 requeues 0) 
+ backlog 0b 0p requeues 0
+--
+qdisc clsact ffff: dev cali78bac677beb parent ffff:fff1 
+ Sent 620754 bytes 1656 pkt (dropped 0, overlimits 0 requeues 0) 
+ backlog 0b 0p requeues 0
+--
+qdisc clsact ffff: dev cali1c0cad31d33 parent ffff:fff1 
+ Sent 7570673 bytes 19820 pkt (dropped 0, overlimits 0 requeues 0) 
+ backlog 0b 0p requeues 0
+--
+qdisc clsact ffff: dev cali0c3fb9ffe63 parent ffff:fff1 
+ Sent 651039 bytes 1702 pkt (dropped 0, overlimits 0 requeues 0) 
+ backlog 0b 0p requeues 0
+```
+
+ **Validation from calico-node**
+
+Run the following command to find the name
+
+```
+CALICO_NODE=$(kubectl get pods -n calico-system -l k8s-app=calico-node -o wide | grep 10.0.1.20 | awk {'print $1'}) && echo $CALICO_NODE
+kubectl exec -ti $CALICO_NODE -n calico-system -- tc -s qdisc show | grep clsact -A 2
+
+```
 
 
 
