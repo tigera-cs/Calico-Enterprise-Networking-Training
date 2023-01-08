@@ -557,7 +557,7 @@ To revert back to standard Linux dataplane, follow the below procedure.
 kubectl patch installation.operator.tigera.io default --type merge -p '{"spec":{"calicoNetwork":{"linuxDataplane":"Iptables"}}}'
 
 ```
-2. calico-node pods should get restarted. Run the following command validate the calico-node restart.
+2. calico-node pods should get restarted. Run the following command to validate the calico-node restart.
  
 ```
 watch kubectl get pods -n calico-system
