@@ -81,7 +81,7 @@ EOF
 
 ```
 
-5. It can take up to 60s for kubelet to pick up the ConfigMap. tigera operator will then do a rolling update of the relevant pods in the calico-system namespace to pass on the change. calico-node, calico-typha, and calico-kubecontroller pods should be restarted. Run the following command to validate. Make sure all the pods are back into fully Running state after the restart.
+5. It can take up to 60s for kubelet to pick up the ConfigMap. tigera operator will then do a rolling update of the relevant pods in the calico-system namespace to pass on the change. calico-node, calico-typha, and calico-kubecontroller pods should be restarted. Run the following command to validate that these pods are restarted. Make sure all the pods are back into fully Running state after the restart.
  
 ```
 watch kubectl get pods -n calico-system
@@ -545,29 +545,49 @@ You should see firehose of output similar to the following.
 >[Final result=ALLOW (-1). Program execution time: 7366ns] - Message
 > 
 
+_______________________________________________________________________________________________________________________________________________________________________
 
 ### Revert back to iptables dataplane
 
-To revert to standard Linux networking:
+To revert back to standard Linux dataplane, follow the below procedure.
 
-Reverse the changes to the operator’s Installation:
+1. Revert the changes to the operator’s Installation resource.
 
-    tigera@bastion:~$ kubectl patch installation.operator.tigera.io default --type merge -p '{"spec":{"calicoNetwork":{"linuxDataplane":"Iptables"}}}'
-	or
-	ubuntu@ip-10-0-1-20:~$ kubectl patch installation.operator.tigera.io default --type merge -p '{"spec":{"calicoNetwork":{"linuxDataplane":"Iptables"}}}'
-If you disabled kube-proxy, re-enable it (for example, by removing the node selector added above).
+```
+kubectl patch installation.operator.tigera.io default --type merge -p '{"spec":{"calicoNetwork":{"linuxDataplane":"Iptables"}}}'
 
-    tigera@bastion:~$ kubectl patch ds -n kube-system kube-proxy --type merge -p '{"spec":{"template":{"spec":{"nodeSelector":{"non-calico": null}}}}}'
-	or
-	ubuntu@ip-10-0-1-20 :~$ kubectl patch ds -n kube-system kube-proxy --type merge -p '{"spec":{"template":{"spec":{"nodeSelector":{"non-calico": null}}}}}'
-Monitor existing workloads to make sure they re-establish any connections disrupted by the switch.
+```
+2. calico-node pods should get restarted. Run the following command validate the calico-node restart.
+ 
+```
+watch kubectl get pods -n calico-system
 
-After you see the kube-poxy pods are back please check the following controller node.
+```
 
-    ubuntu@ip-10-0-1-20:~$ kubectl get pods -n kube-system -o wide | grep proxy
-    kube-proxy-w8hl6   1/1 Running   0  4m5s	10.0.1.30   ip-10-0-1-30   <none>   <none>
-    kube-proxy-zgv8f   1/1 Running   0  4m5s	10.0.1.31   ip-10-0-1-31   <none>   <none>
-    kube-proxy-zj8qn   1/1 Running   0  4m5s    10.0.1.20   ip-10-0-1-20   <none>   <none>
+3. If you disabled kube-proxy, re-enable it.
 
-    ubuntu@ip-10-0-1-20:~$ tc -s qdisc show | grep clsact -A 2
-    ubuntu@ip-10-0-1-20:~$
+```
+kubectl patch ds -n kube-system kube-proxy --type merge -p '{"spec":{"template":{"spec":{"nodeSelector":{"non-calico": null}}}}}'
+
+```
+4. Make sure kube-proxy pods are in Running state.
+
+```
+kubectl get pods -n kube-system -l k8s-app=kube-proxy
+
+```
+
+```
+NAME               READY   STATUS    RESTARTS   AGE
+kube-proxy-87lzp   1/1     Running   0          41s
+kube-proxy-bgb8t   1/1     Running   0          41s
+kube-proxy-gzvsb   1/1     Running   0          41s
+```
+
+```
+tc -s qdisc show | grep clsact -A 2
+
+```
+
+
+> **Congratulations! You have completed `4. Kubernetes Services and CE Service Advertisement` lab.**
