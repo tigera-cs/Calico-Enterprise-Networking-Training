@@ -1107,7 +1107,7 @@ kubectl delete bgppeers bgppeer-global-64512
 
 ```
 
-19. Switch back to IPVS mode, edit the kube-proxy's `configmap` by changing the `mode` from `ipvs` to "".
+19. Switch back to `iptables` mode, edit the kube-proxy's `configmap` by changing the `mode` from `ipvs` to "".
 
 ```
 kubectl -n kube-system edit cm kube-proxy
