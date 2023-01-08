@@ -502,7 +502,7 @@ ConntrackKey{proto=17 10.48.0.5:53 <-> 10.48.0.132:13963} -> Entry{Type:0, Creat
 
 _______________________________________________________________________________________________________________________________________________________________________
 
-### Troubleshooting Calico Enterprise eBPF
+### Troubleshoot Calico Enterprise eBPF
 
 Troubleshooting eBPF at time could require enabling `debug` logging. In this section, we will learn how to enable `debug` logging for eBPF.
 
