@@ -3,7 +3,7 @@
 This lab provides the instructions to:
 
 * [Overview](https://github.com/tigera-cs/Calico-Enterprise-Networking-Training/blob/main/6.%20Implement%20Calico%20Enterprise%20eBPF/README.md#overview)
-* [Implement Calico Enterprise Egress Gateway](https://github.com/tigera-cs/Calico-Enterprise-Networking-Training/blob/main/6.%20Implement%20Calico%20Enterprise%20eBPF/README.md#enable-calico-enterprise-ebpf)
+* [Enable Calico Enterprise eBPF](https://github.com/tigera-cs/Calico-Enterprise-Networking-Training/blob/main/6.%20Implement%20Calico%20Enterprise%20eBPF/README.md#enable-calico-enterprise-ebpf)
 
 
 ### Overview
