@@ -590,4 +590,4 @@ tc -s qdisc show | grep clsact -A 2
 ```
 
 
-> **Congratulations! You have completed `4. Kubernetes Services and CE Service Advertisement` lab.**
+> **Congratulations! You have completed `6. Implement Calico Enterprise eBPF` lab.**
