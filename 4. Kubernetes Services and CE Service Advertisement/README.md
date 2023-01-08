@@ -830,9 +830,9 @@ ________________________________________________________________________________
 # Configure kube-proxy to use IPVS mode
 
 
-Kube-proxy can rrun in three different modes, which are user-space proxy mode, iptables proxy mode and IPVS proxy mode. IPVS uses the netlink interface to create IPVS rules for the services. IPVS is also the component that redirects the traffic to the endpoints. Similar to iptables mode, IPVS is also implemented at the Linux kernel level, but it uses hash table for the underlying data structure. As a result, it handles the traffic with lower latency compared to iptables mode. IPVS mode provides greater scale and performance compared iptables mode when it comes to large numbe of services. In this lab, we will configure kube-proxy to use IPVS mode.
+Kube-proxy can run in three different modes, which are user-space proxy mode, iptables proxy mode and IPVS proxy mode. IPVS uses the netlink interface to create IPVS rules for the services. IPVS is also the component that redirects the traffic to the endpoints. Similar to iptables mode, IPVS is also implemented at the Linux kernel level, but it uses hash table for the underlying data structure. As a result, it handles the traffic with lower latency compared to iptables mode. IPVS mode provides greater scale and performance compared iptables mode when it comes to large number of services. In this lab, we will configure kube-proxy to use IPVS mode.
 
-1. Let start by loading the below required kernel modules and install `ipvsadm` and `ipset` on all the nodes. SSH into each cluster node (control1, worker1, worker2) and run the below commands.
+1. Let start by loading the below required kernel modules and install `ipvsadm` and `ipset` on all the nodes. SSH into each cluster node `control1` `worker1` `worker2` and run the below commands.
 
 ```
 sudo apt install -y ipvsadm ipset
