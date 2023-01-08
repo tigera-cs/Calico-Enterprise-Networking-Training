@@ -9,7 +9,7 @@ This lab provides the instructions to:
 
 ### Overview
 
-In Kubernetes, Ingress traffic refers to any traffic that is initiated from outside the cluster to the services running inside the Kubernetes cluster. Egress traffic is just the opposite, any traffic that is initiated from the pods from within the cluster to the IP endpoints that are located outside the cluster. Kubernetes provides a native ingress resource to manage and control Ingress traffic. However, there is no native Kubernetes Egress resource. So when pods need to connect to an endpoint outside the cluster, they do so using their own IP addresses by default. Considering that an application could be implemented through one or more pods and the fact that pods in Kubernetes are ephemeral, it is almost impossible to control the Kubernetes egress traffic from outside the cluster as the IP addresses are constantly changing. Egress gateways (EGWs) are pods that act as gateways for traffic leaving the cluster from certain client pods. The primary function of egress gateway is to configure the egress gateway client to have a particular and persistent source IP address when connecting to services outside the Kubernetes cluster.
+In Kubernetes, Ingress traffic refers to any traffic that is initiated from outside the cluster to the services running inside the Kubernetes cluster. Egress traffic is just the opposite, any traffic that is initiated from the pods from within the cluster to the IP endpoints that are located outside the cluster. Kubernetes provides a native ingress resource to manage and control Ingress traffic. However, there is no native Kubernetes Egress resource. So when pods need to connect to an endpoint outside the cluster, they do so using their own IP addresses by default. Considering that an application could be implemented through one or more pods and the fact that pods in Kubernetes are ephemeral, it is almost impossible to identify and control the Kubernetes egress traffic from outside the cluster as the IP addresses are constantly changing. Egress gateways (EGWs) are pods that act as gateways for traffic leaving the cluster from certain client pods. The primary function of egress gateway is to configure the egress gateway client to have a particular and persistent source IP address when connecting to services outside the Kubernetes cluster.
 
 
 After finshing this lab, you should gain a good understanding of how to deploy Calico Enterprise Egress Gateway and establish a permanent identity for the traffic that is leaving the cluster.
@@ -25,7 +25,7 @@ ________________________________________________________________________________
 kubectl patch felixconfiguration.p default --type='merge' -p '{"spec":{"egressIPSupport":"EnabledPerNamespaceOrPerPod"}}'
     
 ```
-2. Egress gateways require the policy sync API to be enabled on Felix to implement symmetric routing. Run the following command to enable this configuration cluster-wide.
+2. Egress gateways require the Policy Sync API to be enabled in `felixconfiguration` to implement symmetric routing. Run the following command to enable this configuration cluster-wide.
 
 ```
 kubectl patch felixconfiguration.p default --type='merge' -p '{"spec":{"policySyncPathPrefix":"/var/run/nodeagent"}}'
@@ -110,7 +110,7 @@ kubectl get pods -n app1
 
 ```
 
-6. Egress gateway image needs to be downloaded onto the the nodes where egress gateway pods are deployed. We need to identify the pull secret that is needed for pulling Calico Enterprise images, and copy this into the namespace where you plan to create your egress gateways. Calico Enterprise by default uses a secret named `tigera-pull-secret`. Run the following command to copy `tigera-pull-secret` from `calico-system` namespace to the `default` namespace.
+6. Egress gateway image needs to be downloaded onto the the nodes where egress gateway pods are deployed. We need to identify the pullsecret that is needed for pulling Calico Enterprise images and copy it into the namespace where you plan to create your egress gateways. Calico Enterprise by default uses a secret named `tigera-pull-secret`. Run the following command to copy `tigera-pull-secret` from `calico-system` namespace to the `default` namespace.
 
 ```
 kubectl get secret tigera-pull-secret --namespace=calico-system -o yaml | grep -v '^[[:space:]]*namespace:[[:space:]]*calico-system' | kubectl apply --namespace=default -f -
@@ -121,7 +121,7 @@ kubectl get secret tigera-pull-secret --namespace=calico-system -o yaml | grep -
 
 https://docs.tigera.io/networking/egress/egress-gateway-on-prem#deploy-a-group-of-egress-gateways 
 
-**Note:** Since Tigera continously updates this manifest with the new features and configurations paramters, this manifest should be downloads from the Tigera docs site. Following is a sample manifest from the docs site.
+**Note:** Since Tigera continously updates this manifest with the new features and configurations paramters, this manifest should be downloaded from the Tigera docs site. Following is a sample manifest from the docs site.
 
 Note the following configurations:
 
@@ -196,14 +196,14 @@ nginx-deployment-9456bbbf9-rkl9s   1/1     Running   0          23h    10.48.0.3
 kubectl annotate ns app1 egress.projectcalico.org/selector='egress-code == "red"'
 
 ```
-10. By default the above selector can only match egress gateways in the same namespace. To select gateways in a different namespace, specify a namespaceSelector annotation as well. Since our egress gateway pod is running in `default` namespace and our egress gateway client is running in `app1` namespace, we need to run the following command.
+10. By default, the above selector can only match egress gateways in the same namespace. To select gateways in a different namespace, specify a namespaceSelector annotation as well. Since our egress gateway pod is running in `default` namespace and our egress gateway client is running in `app1` namespace, we need to run the following command.
 
 ```
 kubectl annotate ns app1 egress.projectcalico.org/namespaceSelector="projectcalico.org/name == 'default'"
 
 ```
 
-11. Deploy the needed BGPConfiguration and BGPPeer, so we route our traffic to the bastion host through the egress gateway:
+11. Deploy the needed BGPConfiguration and BGPPeer so we route our traffic to the `bastion` host through the egress gateway.
 
 ```
 kubectl apply -f -<<EOF
@@ -234,7 +234,7 @@ EOF
 
 ```
 
-12. Bastion host is simulating our upstream router and we should have BGP sessions established to all the cluster nodes using the above configurations. Run the following command on the bastion node to validate the bgp sessions from the bastion node to the cluster nodes.
+12. `Bastion` host is simulating our upstream router and we should have BGP sessions established to all the cluster nodes using the above configurations. Run the following command on the `bastion` node to validate the bgp sessions from the `bastion` node to the cluster nodes.
 
 ```
 sudo birdc show protocols
@@ -251,7 +251,7 @@ worker1  BGP      master   up     23:42:36    Established
 worker2  BGP      master   up     23:42:35    Established
 ```
 
-13. Check the routes on the bastion node. You should see that the edge gateway pod is reachable through the worker node where it has been deployed:
+13. Check the routes on the `bastion` node. You should see that the edge gateway pod is reachable through the worker node where it has been deployed.
 
 ```
 ip route
@@ -267,16 +267,18 @@ default via 10.0.1.1 dev ens5 proto dhcp src 10.0.1.10 metric 100
         nexthop via 10.0.1.31 dev ens5 weight 1
 ```
 
-14. Let verify our egress gateway configurations in action and ensure that `app1` IP address are proxied by egress gateway when connecting to services outside the cluster. Open a second terminal to your lab instance. On that terminal, start netcat in the bastion host to listen to a specific port.
+14. Let verify our egress gateway configurations in action and ensure that `app1` IP address are proxied by egress gateway when connecting to services outside the cluster. Open a second terminal to your lab instance. On that terminal, start netcat on the `bastion` host to listen to a specific port.
 
 ```
 netcat -nvlkp 7777
+
 ```
 
 15. On the original terminal window, exec into any of the pods in the app1 namespace.
 
 ```
 APP1_POD=$(kubectl get pod -n app1 --no-headers -o name | head -1) && echo $APP1_POD
+
 ```
 ```
 kubectl exec -ti $APP1_POD -n app1 -- sh
@@ -286,6 +288,7 @@ kubectl exec -ti $APP1_POD -n app1 -- sh
 
 ```
 nc -zv 10.0.1.10 7777
+
 ```
 
 17. Type `exit` to exit out the pod terminal.
@@ -294,7 +297,7 @@ nc -zv 10.0.1.10 7777
 exit
 ```
 
-18. Go to the terminal that you ran the following netcat server on the bastion node. You should see an output saying you connected from the IP of one of the egress gateway pods to the netcat server.
+18. Go to the terminal that you ran the following netcat server on the `bastion` node. You should see an output saying you connected from the IP of the egress gateway pod to the netcat server.
 
 ```
 tigera@bastion:~$ netcat -nvlkp 7777
@@ -304,7 +307,7 @@ Listening on 0.0.0.0 7777
 Connection received on 10.10.10.0 39457
 ```
 
-19. Stop the netcat listener process in the bastion host with `^C`.
+19. Stop the netcat listener process in the `bastion` host with `^C`.
 
 20. Let's check on the special routing that Felix has implemented to proxy the `app1` traffic through the egress gateway. Check where the egress gateway client pods are running. 
 
@@ -365,7 +368,7 @@ kubectl edit deployments.apps egress-gateway
 kubectl get pods -o wide   
 ```
 
-26. Let's now implement a security policy that blocks ICMP traffic to `10.0.1.10`, but allows every other traffic.
+26. Let's now implement a security policy that blocks ICMP traffic from egress gateway pod to `10.0.1.10`, but allows every other traffic.
 
 ```
 kubectl apply -f -<<EOF
@@ -393,6 +396,7 @@ spec:
 EOF
 
 ```
+
 27. `ICMP_PROBE_TIMEOUT` environment variable is configured to `15s` by default. It should take about 15-20s after implementing the above policy for the egress gateway pod to show as non-ready as depiected below.
 
 ```
