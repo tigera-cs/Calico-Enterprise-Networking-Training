@@ -118,25 +118,29 @@ kubectl patch felixconfigurations default --patch='{"spec": {"bpfExternalService
 
 ```
     
-10. Check calico-node pods logs to verify eBPF is enabled. We will check the logs for one calico-node pod as demonstration below.
+10. Check calico-node pods logs to verify eBPF is enabled. 
 
 ```
-kubectl get pods -n calico-system -o wide | grep node
+for i in $(kubectl get pods -n calico-system -o name | grep calico-node) ; do kubectl logs $i -n calico-system | grep -w "BPF enabled" ; done
 
 ```
 
+You should see an output similar to the following.
 
-    
-
----- 
-***Your node name hash will be different from what is in this document.***
-
-    tigera@bastion:~$ kubectl logs -n calico-system calico-node-sm6zw  | grep -w "BPF enabled"
-    
-    2021-04-28 13:39:59.112 [INFO][485] felix/int_dataplane.go 713: BPF enabled, starting BPF endpoint manager and map manager.
-    
-    2021-04-28 13:40:09.249 [INFO][485] felix/int_dataplane.go 2025: BPF enabled, disabling unprivileged BPF usage.
-
+```
+2023-01-08 05:28:36.405 [INFO][56302] felix/int_dataplane.go 542: BPF enabled, configuring iptables layer to clean up kube-proxy's rules.
+2023-01-08 05:28:36.696 [INFO][56302] felix/int_dataplane.go 973: BPF enabled, starting BPF endpoint manager and map manager.
+2023-01-08 05:28:36.814 [INFO][56302] felix/int_dataplane.go 2544: BPF enabled, disabling unprivileged BPF usage.
+2023-01-08 05:28:52.520 [INFO][57188] felix/int_dataplane.go 542: BPF enabled, configuring iptables layer to clean up kube-proxy's rules.
+2023-01-08 05:28:52.648 [INFO][57188] felix/int_dataplane.go 973: BPF enabled, starting BPF endpoint manager and map manager.
+2023-01-08 05:28:52.707 [INFO][57188] felix/int_dataplane.go 2544: BPF enabled, disabling unprivileged BPF usage.
+2023-01-08 05:29:44.193 [INFO][54837] felix/int_dataplane.go 542: BPF enabled, configuring iptables layer to clean up kube-proxy's rules.
+2023-01-08 05:29:44.747 [INFO][54837] felix/int_dataplane.go 973: BPF enabled, starting BPF endpoint manager and map manager.
+2023-01-08 05:29:44.966 [INFO][54837] felix/int_dataplane.go 2544: BPF enabled, disabling unprivileged BPF usage.
+2023-01-08 05:29:18.138 [INFO][56524] felix/int_dataplane.go 542: BPF enabled, configuring iptables layer to clean up kube-proxy's rules.
+2023-01-08 05:29:18.364 [INFO][56524] felix/int_dataplane.go 973: BPF enabled, starting BPF endpoint manager and map manager.
+2023-01-08 05:29:18.532 [INFO][56524] felix/int_dataplane.go 2544: BPF enabled, disabling unprivileged BPF usage.
+```
 -----
 
 # Checking if the eBPF is enforced. #
