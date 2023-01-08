@@ -859,13 +859,11 @@ cut -f1 -d " " /proc/modules | grep -e ip_vs -e nf_conntrack
 
 ```
 
-
-## Steps to enable IPVS mode 
-
 3. To enable IPVS mode, edit the kube-proxy's `configmap` by changing the `mode` from "" to `ipvs`.
 
 ```
 kubectl -n kube-system edit cm kube-proxy
+
 ```
 
 Below is a sample configuration.
@@ -877,15 +875,17 @@ Below is a sample configuration.
 
 ```
 for i in $(kubectl get pods -n kube-system -o name | grep kube-proxy) ; do kubectl delete $i -n kube-system ; done
+
 ```
 
-3. Check the logs of new kube-proxy pods
+5. Check the logs of new kube-proxy pods
 
 ```
 for i in $(kubectl get pods -n kube-system -o name | grep kube-proxy) ; do kubectl logs $i -n kube-system | grep "Using ipvs Proxier" ; done
+
 ```
 
-4. If you are able to find the following String in the logs, IPVS mode is being used by the cluster. You can also check the detailed logs for the IPVS mode.
+6. If you are able to find the following String in the logs, IPVS mode is being used by the cluster. You can also check the detailed logs for the IPVS mode.
 
 ```
 I0103 00:16:08.955456       1 server_others.go:269] "Using ipvs Proxier"
@@ -893,14 +893,16 @@ I0103 00:16:10.305447       1 server_others.go:269] "Using ipvs Proxier"
 I0103 00:16:07.787211       1 server_others.go:269] "Using ipvs Proxier"
 ```
 
-5. Users can use ipvsadm tool to check whether kube-proxy are maintaining IPVS rules correctly. This can be done from any of the cluster nodes, but not from the bastion node. In this example, we will use the kubernetes APIserver service to check on the relevant rules. You can follow the below procedure to check on the IPVS loadbalancing rules for other services in the cluster.
+7. Users can use ipvsadm tool to check whether kube-proxy are maintaining IPVS rules correctly. This can be done from any of the cluster nodes, but not from the bastion node. In this example, we will use the kubernetes APIserver service to check on the relevant rules. You can follow the below procedure to check on the IPVS loadbalancing rules for other services in the cluster.
 
 ```
 ssh worker1
+
 ```
 
 ```
 kubectl get svc
+
 ``` 
 
 ```
@@ -908,7 +910,7 @@ NAME         TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
 kubernetes   ClusterIP   10.49.0.1    <none>        443/TCP   4d2h
 ```
 
-6. As the APIServer has a single endpoint because our cluster only has one master node, we can grep a single line below the Cluster IP to check the IPVS proxy rules for it. Following are the IPVS proxy rules for above services
+8. As the APIServer has a single endpoint because our cluster only has one master node, we can grep a single line below the Cluster IP to check the IPVS proxy rules for it. Following are the IPVS proxy rules for above services
 
 ```
 sudo ipvsadm -ln | grep -A1 10.49.0.1:443
@@ -920,7 +922,7 @@ TCP  10.49.0.1:443 rr
   -> 10.0.1.20:6443               Masq    1      1          0   
 ```
 
-7. let's create a `nginx-deployment` and a `service` and observe how `ipvs` loadbalancing works.
+9. let's create a `nginx-deployment` and a `service` and observe how `ipvs` loadbalancing works.
 
 
 ```
@@ -960,7 +962,8 @@ spec:
 EOF
 
 ```
-8. Examine the ClusterIP of `service-nginx` service.
+
+10. Examine the ClusterIP of `service-nginx` service.
 
 ```
 kubectl get svc service-nginx
@@ -972,13 +975,14 @@ NAME            TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE
 service-nginx   ClusterIP   10.49.20.211   <none>        80/TCP    70s
 ```
 
-9. Now let's list the ipvs table and check how the service maps to pods are created using deployment. (This command needs to run from one of the worker nodes).
+11. Now let's list the ipvs table and check how the service mapping to pods are created using deployment. (This command needs to be run from one of the worker nodes).
 
 ```
 sudo ipvsadm -l | grep -A3 $(kubectl get svc service-nginx --no-headers | awk {'print $3'})
+
 ```
 
-10. Here `ip-10-49-20-211.eu-west-1.co` is the `service-nginx` service and below the service you can see the list of pods/endpoints. `rr` means the loadbalancing used is `round-robin`.
+12. Here `ip-10-49-20-211.eu-west-1.co` is the `service-nginx` service and below the service you can see the list of pods/endpoints. `rr` means the loadbalancing used is `round-robin`.
 
 ```
 TCP  ip-10-49-20-211.eu-west-1.co rr
@@ -987,10 +991,11 @@ TCP  ip-10-49-20-211.eu-west-1.co rr
   -> ip-10-48-0-208.eu-west-1.com Masq    1      0          0 
 ```
 
-11. Check connectivity to the `service-nginx` service from any of the worker nodes.
+13. Check connectivity to the `service-nginx` service from any of the worker nodes.
 
 ```
 ssh worker1
+
 ```
 
 ```
@@ -1027,26 +1032,27 @@ Commercial support is available at
 ```
 
 
-12. Let's check on IPVS load balancing. Open two terminal sessions and SSH into worker1. Note that both of the following commands need to run from the same host.
+14. Let's check on IPVS load balancing. Open two terminal sessions and SSH into worker1. Note that both of the following commands need to run from the same host.
 
 ```
 ssh worker1
+
 ```
 
-13. Run the following command to analyze the packet flow per second in IPVS mode. Initially, all the traffic counters need to be zero for `service-nginx`.
+15. Run the following command to analyze the packet flow per second in IPVS mode. Initially, all the traffic counters need to be zero for `service-nginx`.
 
 ```
 watch sudo ipvsadm -L -n --rate
 
 ```
 
-14. Run the following script to generate traffic for the `service-nginx` service and check the output stats in other terminal again. This time you should see the traffic counters increasing. Please make sure to replace the correct service IP in the following command.
+16. Run the following script to generate traffic for the `service-nginx` service and check the output stats in other terminal again. This time you should see the traffic counters increasing. Please make sure to replace the correct service IP in the following command.
 
 ```
 for i in {1..30}; do  curl <service-ip>:80 ; done
 ```
 
-15. You should see the traffic getting distributed among the pods using `rr algorithm`' Following is a sample output.
+17. You should see the traffic getting distributed among the pods using `rr algorithm`. Following is a sample output.
 
 ```
 Every 2.0s: sudo ipvsadm -L -n --rate                                                                              ip-10-0-1-30.eu-west-1.compute.internal: Tue Jan  3 00:58:23 2023
@@ -1090,7 +1096,7 @@ TCP  10.49.102.204:80                    0        0        0        0        0
 TCP  10.49.105.153:9093                  0        0        0        0        0
 ```
 
-16. Clean up the bgpconfiguration and bgppeer resource previously configured.
+18. Clean up the bgpconfiguration and bgppeer resource previously configured.
 
 ```
 kubectl delete bgpconfigurations default
@@ -1101,6 +1107,12 @@ kubectl delete bgppeers bgppeer-global-64512
 
 ```
 
+19. Switch back to IPVS mode, edit the kube-proxy's `configmap` by changing the `mode` from `ipvs` to "".
+
+```
+kubectl -n kube-system edit cm kube-proxy
+
+```
 
 
 > **Congratulations! You have completed `4. Kubernetes Services and CE Service Advertisement` lab.**
