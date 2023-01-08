@@ -249,46 +249,50 @@ qdisc clsact ffff: dev ens5 parent ffff:fff1
  backlog 0b 0p requeues 0
 ```
 
+12. Calico Enterprise provides bpftool to interact with Calico Enterpris bpf and collect relevant information. bpftool is available from calico-node pods. Let's use bpftool to view the configurations implemented by bpf. We will run these commands from calico-node pod runnin on `control1`.
 
-The output will be longer for the purpose of this example. We reduce the length of output
- 
- 
- 
-# Using calico-node bpf tool inside node: #
+```
+CALICO_NODE=$(kubectl get pods -n calico-system -l k8s-app=calico-node -o wide | grep 10.0.1.20 | awk {'print $1'}) && echo $CALICO_NODE
 
-*Get the calico nodes names:* 
+```
 
-    ubuntu@ip-10-0-1-20:~$ kubectl get pods -n calico-system -o wide | grep node
-    calico-node-84r2t 1/1 Running   0  4m26s   10.0.1.20  ip-10-0-1-20   <none>   <none>
-    calico-node-cqm54 1/1 Running   0  4m15s   10.0.1.31  ip-10-0-1-31   <none>   <none>
-    calico-node-nhn52 1/1 Running   0  4m2s    10.0.1.30  ip-10-0-1-30   <none>   <none>
-    
-*Run command inside calico node name:*
+```
+kubectl exec -ti $CALICO_NODE -n calico-system -- calico-node -bpf help
 
-    ubuntu@ip-10-0-1-20:~$ kubectl exec -n calico-system calico-node-84r2t -- calico-node -bpf help
-    tool for interrogating Calico BPF state
-    
-    Usage:
-      calico-bpf [command]
-    
-    Available Commands:
-      arp  Manipulates arp
-      connect-time Manipulates connect-time load balancing programs
-      conntrackManipulates connection tracking
-      help Help about any command
-      ipsets   Manipulates ipsets
-      nat  Nanipulates network address translation (nat)
-      routes   Manipulates routes
-      version  Prints the version and exits
-    
-    Flags:
-      --config string   config file (default is $HOME/.calico-bpf.yaml)
-      -h, --helphelp for calico-bpf
-      -t, --toggle  Help message for toggle
-    
-    Use "calico-bpf [command] --help" for more information about a command.
+```
+You should see an output similar to the following.
 
------
+```
+Defaulted container "calico-node" out of: calico-node, flexvol-driver (init), mount-bpffs (init), install-cni (init)
+INFO[0000] FIPS mode enabled=false                       source="main.go:137"
+tool for interrogating Calico BPF state
+
+Usage:
+  calico-bpf [command]
+
+Available Commands:
+  arp          Manipulates arp
+  completion   Generate the autocompletion script for the specified shell
+  connect-time Manipulates connect-time load balancing programs
+  conntrack    Manipulates connection tracking
+  counters     Show and reset counters
+  help         Help about any command
+  ifstate      Manipulates ifstate
+  ipsets       Manipulates ipsets
+  nat          Manipulates network address translation (nat)
+  policy       Dump policy attached to interface
+  routes       Manipulates routes
+  version      Prints the version and exits
+
+Flags:
+      --config string      config file (default is $HOME/.calico-bpf.yaml)
+  -h, --help               help for calico-bpf
+      --log-level string   Set log level (default "warn")
+  -t, --toggle             Help message for toggle
+
+Use "calico-bpf [command] --help" for more information about a command.
+```
+
 
 # Understanding routes in eBPF: #
 
