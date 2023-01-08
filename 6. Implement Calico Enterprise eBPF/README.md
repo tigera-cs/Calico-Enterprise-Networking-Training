@@ -503,70 +503,33 @@ ________________________________________________________________________________
 
 ### Troubleshooting Calico Enterprise eBPF
 
-24. Troubleshooting eBPF at time could require enabling 
+Troubleshooting eBPF at time could require enabling `debug` logging. In this section, we will learn how to enable `debug` logging for eBPF.
 
-1. Ensure `calicoctl` is installed. Follow the steps from previous labs.
- 
-2. Set Felix `bpfLogLevel` to Debug (Info not so useful at this stage)
+1. Set Felix `bpfLogLevel` to `Debug`. Note that enabling debug logging causes a firehose of logs to the BPF trace pipe and should only be activated once requsted by Tigera support team. Run the following command to enable debug logging.
 
-	Enables a firehose of logs to the BPF trace pipe
+```
+kubectl patch felixconfiguration default --patch='{"spec": {"bpfLogLevel": "Debug"}}'
 
-3. To tail the log: `sudo tc exec bpf debug`
+```
 
-	Every decision point for every packet is logged!
+2. To view the logs, we need to first connect to a node. SSH into `worker1`.
 
-- Get felixconfigruation:
--
+```
+ssh worker1
 
-    ubuntu@ip-10-0-1-20:~$ calicoctl get felixconfigurations default -o yaml
-    apiVersion: projectcalico.org/v3
-    kind: FelixConfiguration
-    metadata:
-      creationTimestamp: "2021-03-11T18:52:26Z"
-      name: default
-      resourceVersion: "11336796"
-      uid: 0e57caaa-6a04-48cb-8bb6-3c4e4ca44c4a
-    spec:
-      bpfEnabled: true
-      bpfExternalServiceMode: DSR
-      bpfKubeProxyIptablesCleanupEnabled: false
-      flowLogsCollectProcessInfo: true
-      logSeverityScreen: Info
-      prometheusMetricsEnabled: true
-      reportingInterval: 0s
+```
 
+3. Run the following command to view the logs. Press `ctrl+c` once done. Note that every decision point for every packet is logged!
 
-- Patch felixconfiguration:
--
+```
+sudo tc exec bpf debug
 
-    ubuntu@ip-10-0-1-20:~$ calicoctl patch felixconfiguration default --patch='{"spec": {"bpfLogLevel": "Debug"}}'
-
-    Successfully patched 1 'FelixConfiguration' resource
-
-- Check felixconfiguration to ensure the BPF is in debug mode 
--
-
-    ubuntu@ip-10-0-1-20:~$ calicoctl get felixconfigurations default -o yaml
-    apiVersion: projectcalico.org/v3
-    kind: FelixConfiguration
-    metadata:
-      creationTimestamp: "2021-03-11T18:52:26Z"
-      name: default
-      resourceVersion: "11336796"
-      uid: 0e57caaa-6a04-48cb-8bb6-3c4e4ca44c4a
-    spec:
-      bpfEnabled: true
-      bpfExternalServiceMode: DSR
-      bpfKubeProxyIptablesCleanupEnabled: false
-      bpfLogLevel: Debug
-      flowLogsCollectProcessInfo: true
-      logSeverityScreen: Info
-      prometheusMetricsEnabled: true
-      reportingInterval: 0s
-
-Run tc in debug mode: `ubuntu@ip-10-0-1-20:~$sudo tc exec bpf debug`
+```
+You should see firehose of output similar to the following.
 
 `<...>-84582 [000] .Ns1  6851.690474: 0: ens192---E: Final result=ALLOW (-1). Program execution time: 7366ns`                                                     
+
+4. Following is a short description of the output above.
 
 > [84582] - PID that triggered NAPI poll (often useful)
 > 
@@ -582,7 +545,7 @@ Run tc in debug mode: `ubuntu@ip-10-0-1-20:~$sudo tc exec bpf debug`
 > 
 
 
-# Reversing to iptables datapath #
+### Revert back to iptables dataplane
 
 To revert to standard Linux networking:
 
