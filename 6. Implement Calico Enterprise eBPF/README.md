@@ -49,7 +49,7 @@ bpf on /sys/fs/bpf type bpf (rw,nosuid,nodev,noexec,relatime,mode=700)
 
 https://docs.tigera.io/maintenance/ebpf/enabling-ebpf#configure-calico-enterprise-to-talk-directly-to-the-api-server
 
-3. First, make a note of the address of the APIServer.Run the following command to find the APIServer IP address.
+3. First, make a note of the address of the APIServer. Run the following command to find the APIServer IP address.
 
 ```
 kubectl get endpoints kubernetes -o wide
