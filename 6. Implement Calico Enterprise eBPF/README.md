@@ -249,7 +249,7 @@ qdisc clsact ffff: dev ens5 parent ffff:fff1
  backlog 0b 0p requeues 0
 ```
 
-12. Calico Enterprise provides bpftool to interact with Calico Enterpris bpf and collect relevant information. bpftool is available from calico-node pods. Let's use bpftool to view the configurations implemented by bpf. We will run these commands from calico-node pod runnin on `control1`.
+12. Calico Enterprise provides bpftool to interact with Calico Enterpris eBPF and collect relevant information. bpftool is available from calico-node pods. Let's use bpftool to view the configurations implemented by eBPF. We will run these commands from calico-node pod runnin on `control1`.
 
 ```
 CALICO_NODE=$(kubectl get pods -n calico-system -l k8s-app=calico-node -o wide | grep 10.0.1.20 | awk {'print $1'}) && echo $CALICO_NODE
@@ -294,96 +294,122 @@ Use "calico-bpf [command] --help" for more information about a command.
 ```
 
 
-# Understanding routes in eBPF: #
+13. Calico Enterprise eBPF routes packets before reaching Linux routing tables. However, Calico Enterprise eBPF always uses Linux routing table to route the first packet and take advantage of Linux kernel security features, RPF, etc. Calico Enterprise eBPF records this information as a conntrack entry in the conntrack map and skip all the processing for the subsequent flows.
 
-BPF program route packets before reaching routing Linux tables however it BPF is relaying on Linux routing table:
+14. SSH into `control1` and show the routing table.
 
-**Linux routing table**
+```
+ssh control1
 
-    ubuntu@ip-10-0-1-20:~$ip route show
-    default via 10.0.1.1 dev ens5 proto dhcp src 10.0.1.20 metric 100
-    10.0.1.0/24 dev ens5 proto kernel scope link src 10.0.1.20
-    10.0.1.1 dev ens5 proto dhcp scope link src 10.0.1.20 metric 100
-    10.48.7.64/26 via 10.0.1.30 dev tunl0 proto bird onlink
-    blackhole 10.48.32.192/26 proto bird
-    10.48.32.195 dev cali2896b5b2df4 scope link
-    10.48.32.196 dev calif903a7f3bc2 scope link
-    10.48.32.197 dev calia7a92b8d91c scope link
-    10.48.32.198 dev cali086ab313818 scope link
-    10.48.32.199 dev cali2e939172c25 scope link
-    10.48.32.200 dev caliac215715fe6 scope link
-    10.48.32.201 dev cali490acbd79f7 scope link
-    10.48.162.128/26 via 10.0.1.31 dev tunl0 proto bird onlink
-    172.17.0.0/16 dev docker0 proto kernel scope link src 172.17.0.1 linkdown
- 
+```
+```
+ip route show
+
+```
+
+You should see an output similar to the following.
+
+```
+default via 10.0.1.1 dev ens5 proto dhcp src 10.0.1.20 metric 100 
+10.0.1.0/24 dev ens5 proto kernel scope link src 10.0.1.20 
+10.0.1.1 dev ens5 proto dhcp scope link src 10.0.1.20 metric 100 
+10.48.0.0/26 via 10.0.1.31 dev ens5 proto bird 
+10.48.0.128 dev cali4b8da7b4d32 scope link 
+blackhole 10.48.0.128/26 proto bird 
+10.48.0.132 dev calia8fdb5c22c7 scope link 
+10.48.0.133 dev cali28487a3174b scope link 
+10.48.0.134 dev cali511b65d1b41 scope link 
+10.48.0.135 dev cali42e0d8fec43 scope link 
+10.48.0.136 dev cali78bac677beb scope link 
+10.48.0.137 dev cali1c0cad31d33 scope link 
+10.48.0.138 dev cali0c3fb9ffe63 scope link 
+10.48.0.192/26 via 10.0.1.30 dev ens5 proto bird 
+172.17.0.0/16 dev docker0 proto kernel scope link src 172.17.0.1 linkdown 
+```
+
+15. Exit the ssh session.
+
+```
+exit
+
+```
+16. Now, let's check the eBPF routing table on calico-node running on `control1`.
+
+```
+kubectl exec -ti $CALICO_NODE -n calico-system -- calico-node -bpf routes dump
+
+```
+
+You should see an output similar to the following.
+
+```
+Defaulted container "calico-node" out of: calico-node, flexvol-driver (init), mount-bpffs (init), install-cni (init)
+INFO[0000] FIPS mode enabled=false                       source="main.go:137"
+   10.0.1.20/32: local host
+   10.0.1.30/32: remote host
+   10.0.1.31/32: remote host
+   10.48.0.0/24: remote in-pool nat-out
+   10.48.0.0/26: remote workload in-pool nat-out nh 10.0.1.31
+ 10.48.0.128/32: local workload in-pool nat-out idx 4
+ 10.48.0.132/32: local workload in-pool nat-out idx 12
+ 10.48.0.133/32: local workload in-pool nat-out idx 13
+ 10.48.0.134/32: local workload in-pool nat-out idx 14
+ 10.48.0.135/32: local workload in-pool nat-out idx 15
+ 10.48.0.136/32: local workload in-pool nat-out idx 18
+ 10.48.0.137/32: local workload in-pool nat-out idx 19
+ 10.48.0.138/32: local workload in-pool nat-out idx 20
+ 10.48.0.192/26: remote workload in-pool nat-out nh 10.0.1.30
+  172.17.0.1/32: local host
+```
+
+17. Note the following about the above output.
+
+* `10.0.1.20/32: local host` = ip is the local node ip
+* `10.0.1.30/32: remote host` = ip is a remote node ip
+* `10.48.162.128/26: remote workload in-pool nat-out nh 10.0.1.31` = remote pod network on node -> 10.0.1.31
+* `10.255.241.69/32: local workload in-pool nat-out idx 77` = local pod 
 
 
+18. As discussed before, in eBPF mode, Calico Enterprise implements Kubernetes service networking directly rather than relying on kube-proxy. Let's check the service implementation details through eBPF.
 
-**BPF routing table**
+19. Run the following commands to list yaobank `summary` service and endpoints. This service has two endpoints. We will see how Calico Enterprise eBPF implements this service next.
 
-    ubuntu@ip-10-0-1-20:~$ kubectl exec -n calico-system calico-node-84r2t -- calico-node -bpf routes dump
-    2021-05-10 10:59:28.353 [INFO][2445] confd/maps.go 313: Loaded map file descriptor. fd=0x7 name="/sys/fs/bpf/tc/globals/cali_v4_routes"
-       10.0.1.20/32: local host
-       10.0.1.30/32: remote host
-       10.0.1.31/32: remote host
-       10.48.0.0/16: remote in-pool nat-out
-      10.48.7.64/26: remote workload in-pool nat-out nh 10.0.1.30
-    10.48.32.192/32: local host
-    10.48.32.195/32: local workload in-pool nat-out idx 11
-    10.48.32.196/32: local workload in-pool nat-out idx 12
-    10.48.32.197/32: local workload in-pool nat-out idx 13
-    10.48.32.198/32: local workload in-pool nat-out idx 14
-    10.48.32.199/32: local workload in-pool nat-out idx 15
-    10.48.32.200/32: local workload in-pool nat-out idx 16
-    10.48.32.201/32: local workload in-pool nat-out idx 19
-    10.48.162.128/26: remote workload in-pool nat-out nh 10.0.1.31
-      172.17.0.1/32: local host
+```
+kubectl get svc -n yaobank summary
 
+```
 
+```
+NAME      TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE
+summary   ClusterIP   10.49.18.111   <none>        80/TCP    6m4s
+```
 
-- `10.0.1.20/32: local host` = ip is a node ip
-- `10.0.1.30/32: remote host` = ip is a remote node ip
-- `10.48.162.128/26: remote workload in-pool nat-out nh 10.0.1.31` = remote pod network on node -> 10.0.1.31
-- `10.255.241.69/32: local workload in-pool nat-out idx 77` = local pod 
+```
+kubectl get endpoints -n yaobank summary
 
+```
+```
+NAME      ENDPOINTS                       AGE
+summary   10.48.0.210:80,10.48.0.212:80   9m58s
+```
 
+20. Run the following command to list the `summary` service implemented through eBPF. Make sure to replace service IP `10.49.18.111` with the service IP in your lab instance.
 
-# BPF nat rules: #
+```
+kubectl exec -ti $CALICO_NODE -n calico-system -- calico-node -bpf nat dump | grep -A2 10.49.18.111
 
-    ubuntu@ip-10-0-1-20:~$ kubectl get svc -n yaobank
-    NAME       TYPE        CLUSTER-IP    EXTERNAL-IP   PORT(S)  AGE
-    customer   ClusterIP   10.49.82.5    <none>        80/TCP   140m
-    database   ClusterIP   10.49.10.100  <none>        2379/TCP 140m
-    summary    ClusterIP   10.49.154.85  <none>        80/TCP   140m
-    ubuntu@ip-10-0-1-20:~$ kubectl get svc -n tigera-manager
-    NAME                     TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)          AGE
-    tigera-manager           ClusterIP   10.49.168.197   <none>        9443/TCP         2d20h
-    tigera-manager-external  NodePort    10.49.205.93    <none>        9443:30003/TCP   2d20h
-    
+```
 
+You should see an output similar to the following. 
 
-    ubuntu@ip-10-0-1-20:~$ kubectl exec -n calico-system calico-node-84r2t -- calico-node -bpf nat dump
-    2021-05-10 11:05:45.649 [INFO][3708] confd/maps.go 313: Loaded map file descriptor. fd=0x7 name="/sys/fs/bpf/tc/globals/cali_v4_nat_fe2"
-    2021-05-10 11:05:45.650 [INFO][3708] confd/maps.go 313: Loaded map file descriptor. fd=0x8 name="/sys/fs/bpf/tc/globals/cali_v4_nat_be"
-    10.49.10.100 port 2379 proto 6 id 21 count 1 local 0
-    	21:0 10.48.7.86:2379
-    ...
-    10.49.205.93 port 9443 proto 6 id 12 count 1 local 1
-    	12:0 10.48.32.200:9443
-    ...
-    10.49.82.5 port 80 proto 6 id 18 count 1 local 0
-    	18:0 10.48.162.144:8000
-    10.49.168.197 port 9443 proto 6 id 14 count 1 local 1
-    	14:0 10.48.32.200:9443
-    ...
-    10.0.1.20 port 30003 proto 6 id 12 count 1 local 1
-    	12:0 10.48.32.200:9443
-    ...
-    10.49.154.85 port 80 proto 6 id 4 count 1 local 0
-    	4:0  10.48.7.87:8000
-    ...
+```
+Defaulted container "calico-node" out of: calico-node, flexvol-driver (init), mount-bpffs (init), install-cni (init)
+10.49.18.111 port 80 proto 6 id 23 count 2 local 0
+        23:0     10.48.0.210:80
+        23:1     10.48.0.212:80
+```
 
-***Each field explained:***
+21. Find below the explanation of each field in the previous output.
 
     [service ip] [service port] [protocol number] [id] [count] [local]
     [id:countid] [pod ip:port]
