@@ -3,7 +3,7 @@
 This lab provides the instructions to:
 
 * [Overview](https://github.com/tigera-cs/Calico-Enterprise-Networking-Training/blob/main/1.%20Install%20Calico%20Enterprise/README.md#deploy-a-three-tier-sample-application-called-yaobank-yet-another-online-bank)
-* [Examine pod network connectivity using Calico Enterprise CNI](https://github.com/Pooriya-a/CalicoEnterprise-Networking-Training/blob/main/2.%20Implement%20pod%20networking%20using%20Calico%20Enterprise%20CNI%20and%20IPAM/README.md#examine-pod-network-connectivity-using-calico-enterprise-cni)
+* [Examine pod network connectivity using Calico Enterprise CNI](https://github.com/tigera-cs/Calico-Enterprise-Networking-Training/blob/main/1.%20Install%20Calico%20Enterprise/README.md#deploy-a-three-tier-sample-application-called-yaobank-yet-another-online-bank)
 * [Create an aditional Calico Enterprise IPPool](https://github.com/Pooriya-a/CalicoEnterprise-Networking-Training/blob/main/2.%20Implement%20pod%20networking%20using%20Calico%20Enterprise%20CNI%20and%20IPAM/README.md#create-an-aditional-calico-enterprise-ippool)
 
 
