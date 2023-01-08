@@ -4,7 +4,7 @@ This lab provides the instructions to:
 
 * [Overview](https://github.com/tigera-cs/Calico-Enterprise-Networking-Training/blob/main/6.%20Implement%20Calico%20Enterprise%20eBPF/README.md#overview)
 * [Enable Calico Enterprise eBPF](https://github.com/tigera-cs/Calico-Enterprise-Networking-Training/blob/main/6.%20Implement%20Calico%20Enterprise%20eBPF/README.md#enable-calico-enterprise-ebpf)
-* [Troubleshooting Calico Enterprise eBPF]
+* [Troubleshooting Calico Enterprise eBPF](https://github.com/tigera-cs/Calico-Enterprise-Networking-Training/blob/main/6.%20Implement%20Calico%20Enterprise%20eBPF/README.md#troubleshooting-calico-enterprise-ebpf)
 
 
 ### Overview
