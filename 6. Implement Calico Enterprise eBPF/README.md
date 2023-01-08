@@ -4,6 +4,7 @@ This lab provides the instructions to:
 
 * [Overview](https://github.com/tigera-cs/Calico-Enterprise-Networking-Training/blob/main/6.%20Implement%20Calico%20Enterprise%20eBPF/README.md#overview)
 * [Enable Calico Enterprise eBPF](https://github.com/tigera-cs/Calico-Enterprise-Networking-Training/blob/main/6.%20Implement%20Calico%20Enterprise%20eBPF/README.md#enable-calico-enterprise-ebpf)
+* [Troubleshooting Calico Enterprise eBPF]
 
 
 ### Overview
@@ -431,36 +432,78 @@ Defaulted container "calico-node" out of: calico-node, flexvol-driver (init), mo
 > [pod ip:port]
 
 
-# BPF ipsests: #
+22. `ipsets` are key in implementing security policies. To list the `ipsets` in use on a node, run the following command.
 
-    ubuntu@ip-10-0-1-20:~$ kubectl exec -n calico-system calico-node-84r2t -- calico-node -bpf ipsets dump
-    2021-05-10 11:10:12.086 [INFO][4611] confd/maps.go 313: Loaded map file descriptor. fd=0x7 name="/sys/fs/bpf/tc/globals/cali_v4_ip_sets"
-    IP set 0x100000001
-       10.49.0.10:53 (proto 17)
-    
-    IP set 0xa48e493196cddbb
-       10.0.1.20/32
-    
-    IP set 0x1451213aebb2fe8a
-       10.48.7.69/32
-    
-    IP set 0x1e69a881cefa300e
-       10.48.162.140/32
-    
+```
+kubectl exec -ti $CALICO_NODE -n calico-system -- calico-node -bpf ipsets dump
 
+```
+You should see an output similar to the following. However, the list can be different depending on the available ipsets on the node.
 
-# BPF connection tracking: #
+```
+Defaulted container "calico-node" out of: calico-node, flexvol-driver (init), mount-bpffs (init), install-cni (init)
+INFO[0000] FIPS mode enabled=false                       source="main.go:137"
+IP set 0x100000001
+   10.49.0.10:53 (proto 17)
 
-    ubuntu@ip-10-0-1-20:~$ kubectl exec -n calico-system calico-node-84r2t -- calico-node -bpf conntrack dump | less
-    ConntrackKey{proto=6 10.0.1.20:6443 <-> 10.0.100.241:35510} -> Entry{Type:0, Created:253843922820121, LastSeen:253844042814512, Flags: <none> Data: {A2B:{Bytes:140 Packets:2 Seqno:2871352450 SynSeen:true AckSeen:true FinSeen:true RstSeen:false Whitelisted:false Opener:false Ifindex:0} B2A:{Bytes:272 Packets:4 Seqno:2473514777 SynSeen:true AckSeen:true FinSeen:true RstSeen:false Whitelisted:true Opener:true Ifindex:2} OrigDst:0.0.0.0 OrigPort:0 TunIP:0.0.0.0}} Age: 1.178198172s Active ago 1.058203781s CLOSED
-    
-    ConntrackKey{proto=6 10.48.32.200:9443 <-> 10.0.100.241:32628} -> Entry{Type:2, Created:253829881145823, LastSeen:253829910183842, Flags: <none> Data: {A2B:{Bytes:140 Packets:2 Seqno:2722366807 SynSeen:true AckSeen:true FinSeen:true RstSeen:false Whitelisted:true Opener:false Ifindex:0} B2A:{Bytes:272 Packets:4 Seqno:3020788598 SynSeen:true AckSeen:true FinSeen:true RstSeen:false Whitelisted:true Opener:true Ifindex:2} OrigDst:10.0.1.20 OrigPort:30003 TunIP:0.0.0.0}} Age: 15.220220233s Active ago 15.191182214s CLOSED
-    
-    ConntrackKey{proto=17 10.48.7.66:53 <-> 10.48.32.195:46851} -> Entry{Type:0, Created:253796864945916, LastSeen:253796865695820, Flags:16 Data: {A2B:{Bytes:504 Packets:2 Seqno:0 SynSeen:false AckSeen:false FinSeen:false RstSeen:false Whitelisted:true Opener:false Ifindex:0} B2A:{Bytes:278 Packets:2 Seqno:0 SynSeen:false AckSeen:false FinSeen:false RstSeen:false Whitelisted:true Opener:true Ifindex:11} OrigDst:0.0.0.0 OrigPort:0 TunIP:0.0.0.0}} Age: 48.237002075s Active ago 48.236252171s
+IP set 0xd26fa31f8d497f4
+   10.48.0.135/32
+   10.48.0.208/32
 
-    
+IP set 0x3daf74135d5cb3e9
+   10.0.1.20/32
 
-# Change BPF in debug mode #
+IP set 0x6b040aa4ed99b698
+   10.48.0.194/32
+
+IP set 0x6e77fb5b61e41fed
+   10.48.0.2/32
+   10.48.0.5/32
+
+IP set 0x7edc0e52b1c7a2ac
+   10.48.0.11/32
+   10.48.0.199/32
+
+IP set 0x9a85ddf3b2bb9365
+   10.0.1.20:6443 (proto 6)
+
+IP set 0xa94ca2b47cd0c227
+   10.48.0.197/32
+
+IP set 0xae04d0ae61bb92ee
+   10.48.0.137:5443 (proto 6)
+   10.48.0.137:8080 (proto 6)
+   10.48.0.14:5443 (proto 6)
+   10.48.0.14:8080 (proto 6)
+
+IP set 0xca2fa4f94dc261c4
+   10.48.0.201/32
+
+IP set 0xdfdd106f994fdb54
+   10.48.0.197/32
+```
+
+23. To list the conntrack map, run the following command.
+
+```
+kubectl exec -ti $CALICO_NODE -n calico-system -- calico-node -bpf conntrack dump
+
+```
+You should see an output similar to the following. The following output is truncated.
+
+```
+Defaulted container "calico-node" out of: calico-node, flexvol-driver (init), mount-bpffs (init), install-cni (init)
+INFO[0000] FIPS mode enabled=false                       source="main.go:137"
+ConntrackKey{proto=17 10.48.0.2:53 <-> 10.48.0.135:36450} -> Entry{Type:0, Created:13280597154143, LastSeen:13280597444227, Flags: 0x110 B-A Data: {A2B:{Bytes:225 Packets:1 Seqno:0 SynSeen:false AckSeen:false FinSeen:false RstSeen:false Whitelisted:true Opener:false Ifindex:2} B2A:{Bytes:132 Packets:1 Seqno:0 SynSeen:false AckSeen:false FinSeen:false RstSeen:false Whitelisted:true Opener:true Ifindex:15} OrigDst:0.0.0.0 OrigSrc:0.0.0.0 OrigPort:0 OrigSPort:0 TunIP:0.0.0.0}} Age: 24.318178817s Active ago 24.317888733s
+ConntrackKey{proto=6 10.0.1.20:56738 <-> 169.254.169.254:80} -> Entry{Type:0, Created:13297805187841, LastSeen:13297805741251, Flags: <none> Data: {A2B:{Bytes:616 Packets:5 Seqno:1044308989 SynSeen:true AckSeen:true FinSeen:true RstSeen:false Whitelisted:false Opener:true Ifindex:0} B2A:{Bytes:585 Packets:5 Seqno:2967668612 SynSeen:true AckSeen:true FinSeen:true RstSeen:false Whitelisted:true Opener:false Ifindex:2} OrigDst:0.0.0.0 OrigSrc:0.0.0.0 OrigPort:0 OrigSPort:0 TunIP:0.0.0.0}} Age: 7.110195217s Active ago 7.109641807s CLOSED
+ConntrackKey{proto=17 10.48.0.5:53 <-> 10.48.0.132:13963} -> Entry{Type:0, Created:13256085471314, LastSeen:13256086882425, Flags: 0x110 B-A Data: {A2B:{Bytes:677 Packets:3 Seqno:0 SynSeen:false AckSeen:false FinSeen:false RstSeen:false Whitelisted:true Opener:false Ifindex:2} B2A:{Bytes:407 Packets:3 Seqno:0 SynSeen:false AckSeen:false FinSeen:false RstSeen:false Whitelisted:true Opener:true Ifindex:12} OrigDst:0.0.0.0 OrigSrc:0.0.0.0 OrigPort:0 OrigSPort:0 TunIP:0.0.0.0}} Age: 48.829949311s Active ago 48.8285382s
+```
+
+_______________________________________________________________________________________________________________________________________________________________________
+
+### Troubleshooting Calico Enterprise eBPF
+
+24. Troubleshooting eBPF at time could require enabling 
 
 1. Ensure `calicoctl` is installed. Follow the steps from previous labs.
  
