@@ -86,7 +86,7 @@ watch kubectl get pods -n calico-system
 
 ```
 
-**Note:** If you do not see the pods restart then it’s possible that the ConfigMap wasn’t picked up (sometimes Kubernetes is slow to propagate ConfigMap ). Try restaarting the tigera-operator.
+**Note:** If you do not see the pods restart then it’s possible that the ConfigMap was not picked up (sometimes Kubernetes is slow to propagate ConfigMap ). Try restaarting the tigera-operator.
 
 6. In eBPF mode Calico Enterprise replaces kube-proxy and there is no need to run kube-proxy in the cluster. Run the following command to disable kube-proxy.
 
