@@ -120,10 +120,10 @@ kubectl patch felixconfigurations default --patch='{"spec": {"bpfExternalService
     
 10. Check calico-node pods logs to verify eBPF is enabled. We will check the logs for one calico-node pod as demonstration below.
 
-    tigera@bastion:~$ kubectl get pods -n calico-system -o wide | grep node
-    calico-node-84r2t 1/1 Running   0  4m26s   10.0.1.20  ip-10-0-1-20   <none>   <none>
-    calico-node-cqm54 1/1 Running   0  4m15s   10.0.1.31  ip-10-0-1-31   <none>   <none>
-    calico-node-nhn52 1/1 Running   0  4m2s    10.0.1.30  ip-10-0-1-30   <none>   <none>
+```
+kubectl get pods -n calico-system -o wide | grep node
+
+```
 
 
     
