@@ -201,14 +201,53 @@ qdisc clsact ffff: dev cali0c3fb9ffe63 parent ffff:fff1
 
  **Validation from calico-node**
 
-Run the following command to find the name
+Run the following command to do the validation from calico-node running on `control1`
 
 ```
 CALICO_NODE=$(kubectl get pods -n calico-system -l k8s-app=calico-node -o wide | grep 10.0.1.20 | awk {'print $1'}) && echo $CALICO_NODE
 kubectl exec -ti $CALICO_NODE -n calico-system -- tc -s qdisc show | grep clsact -A 2
 
 ```
+You should see an output similar to the following.
 
+```
+Defaulted container "calico-node" out of: calico-node, flexvol-driver (init), mount-bpffs (init), install-cni (init)
+qdisc clsact ffff: dev ens5 parent ffff:fff1 
+ Sent 133366690 bytes 304342 pkt (dropped 0, overlimits 0 requeues 0) 
+ backlog 0b 0p requeues 0
+--
+  qdisc clsact ffff: dev cali4b8da7b4d32 parent ffff:fff1 
+ Sent 0 bytes 0 pkt (dropped 0, overlimits 0 requeues 0) 
+ backlog 0b 0p requeues 0
+--
+  qdisc clsact ffff: dev calia8fdb5c22c7 parent ffff:fff1 
+ Sent 11878043 bytes 10657 pkt (dropped 4, overlimits 0 requeues 0) 
+ backlog 0b 0p requeues 0
+--
+  qdisc clsact ffff: dev cali28487a3174b parent ffff:fff1 
+ Sent 596152 bytes 4286 pkt (dropped 0, overlimits 0 requeues 0) 
+ backlog 0b 0p requeues 0
+--
+  qdisc clsact ffff: dev cali511b65d1b41 parent ffff:fff1 
+ Sent 221125 bytes 1296 pkt (dropped 0, overlimits 0 requeues 0) 
+ backlog 0b 0p requeues 0
+--
+  qdisc clsact ffff: dev cali42e0d8fec43 parent ffff:fff1 
+ Sent 2806182 bytes 13258 pkt (dropped 0, overlimits 0 requeues 0) 
+ backlog 0b 0p requeues 0
+--
+  qdisc clsact ffff: dev cali78bac677beb parent ffff:fff1 
+ Sent 1390238 bytes 3733 pkt (dropped 0, overlimits 0 requeues 0) 
+ backlog 0b 0p requeues 0
+--
+  qdisc clsact ffff: dev cali1c0cad31d33 parent ffff:fff1 
+ Sent 11984945 bytes 33805 pkt (dropped 0, overlimits 0 requeues 0) 
+ backlog 0b 0p requeues 0
+--
+  qdisc clsact ffff: dev cali0c3fb9ffe63 parent ffff:fff1 
+ Sent 1416612 bytes 4086 pkt (dropped 0, overlimits 0 requeues 0) 
+ backlog 0b 0p requeues 0
+```
 
 
 The output will be longer for the purpose of this example. We reduce the length of output
