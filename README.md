@@ -1,5 +1,5 @@
 # Kubernetes Networking Training
-This is the hands-on lab guide for Calico Enterprise Networking Training.
+This is the hands-on lab guide for Calico Networking Training.
 
 ## Lab setup
 
