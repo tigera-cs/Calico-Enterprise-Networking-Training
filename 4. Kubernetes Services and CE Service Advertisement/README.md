@@ -578,7 +578,7 @@ Key things to look in the output are:
 
 Nginx ingress controller, by default, listens to all namespaces. Once an Ingress object is created in any namespace, it will create the necessary rules to forward the traffic. This default behaviour can be modified to limit ingress controller to a specific namespace.
 
-Currently we have not created any ingress resource in the yaobank namespace yet. So if we try to access our lab instance on port 443 using our browser `https:\\yaobank.<LabName>.lynx.tigera.ca`, we will get a 404 error from our ingress controller.
+Currently we have not created any ingress resource in the yaobank namespace yet. So if we try to access our lab instance on port 443 using our browser `https:\\yaobank.<LabName>.training.tigera.ca`, we will get a 404 error from our ingress controller.
 
 3. Deploy the new instance of yaobank app.
 
@@ -774,7 +774,7 @@ metadata:
   namespace: yaobank
 spec:
   rules:
-  - host: "yaobank.<LABNAME>.lynx.tigera.ca"
+  - host: "yaobank.<LABNAME>.training.tigera.ca"
     http:
       paths:
       - path: /
@@ -797,10 +797,10 @@ kubectl get ingress -n yaobank
 
 ```
 NAME      CLASS    HOSTS                                 ADDRESS               PORTS   AGE
-yaobank   <none>   yaobank.cenetworking.lynx.tigera.ca   10.0.1.30,10.0.1.31   80      36s
+yaobank   <none>   yaobank.cenetworking.training.tigera.ca   10.0.1.30,10.0.1.31   80      36s
 ```
 
-7. Check the connectivity to the customer service `https:\\yaobank.<LabName>.lynx.tigera.ca` via your browser. 
+7. Check the connectivity to the customer service `https:\\yaobank.<LabName>.training.tigera.ca` via your browser. 
 
 ![yaobank](img/1.yaobank-ingress-access.JPG)
 
