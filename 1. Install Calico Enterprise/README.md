@@ -621,10 +621,10 @@ kubectl create sa tigercub
 ```
 kubectl create clusterrolebinding tigercub-bind --clusterrole tigera-network-admin --serviceaccount default:tigercub
 ```
-5. Run the following command to retrieve the token for the serviceaccount we just created.
+5. Run the following command to create a token for the serviceaccount we just created.
 
 ```
-kubectl get secret $(kubectl get serviceaccount tigercub -o jsonpath='{range .secrets[*]}{.name}{"\n"}{end}' | grep token) -o go-template='{{.data.token | base64decode}}' && echo
+kubectl create token tigercub --duration=24h
 ```
 
 6. Copy the token where you can easily retrieve it later. 
