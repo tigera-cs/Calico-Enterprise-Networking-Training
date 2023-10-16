@@ -250,7 +250,28 @@ control1 BGP      master   up     23:42:35    Established
 worker1  BGP      master   up     23:42:36    Established   
 worker2  BGP      master   up     23:42:35    Established
 ```
+We must also set the bird config on the bastion to accept advertisements of the egress gateway network.
 
+```
+sudo vi /etc/bird/bird.conf
+```
+In this file add the 10.10.10.0/31 network here:
+
+```
+# Import filter
+filter rt_import {
+                        if (net ~ 10.48.2.0/24) then accept;
+                        if (net ~ 10.49.0.0/16) then accept;
+                        if (net ~ 10.50.0.0/24) then accept;
+                        if (net ~ 10.10.10.0/31) then accept; <-------
+                        reject;
+        }
+```
+And restart bird
+
+```
+sudo systemctl restart bird
+```
 13. Check the routes on the `bastion` node. You should see that the edge gateway pod is reachable through the worker node where it has been deployed.
 
 ```
