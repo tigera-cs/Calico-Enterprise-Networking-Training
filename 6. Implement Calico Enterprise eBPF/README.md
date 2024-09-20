@@ -432,11 +432,132 @@ Defaulted container "calico-node" out of: calico-node, flexvol-driver (init), mo
 > 
 > [pod ip:port]
 
-
-22. `ipsets` are key in implementing security policies. To list the `ipsets` in use on a node, run the following command.
+22. Before using `calico-node -bpf` to find policies implemented for an interface, let's deploy a policy for a pod. Three rules implemented in this policy for the sake of demonstration.
 
 ```
-kubectl exec -ti $CALICO_NODE -n calico-system -- calico-node -bpf ipsets dump
+kubectl apply -f -<<EOF
+apiVersion: projectcalico.org/v3
+kind: NetworkPolicy
+metadata:
+  name: default.customer
+  namespace: yaobank
+  labels:
+    projectcalico.org/tier: default
+spec:
+  tier: default
+  order: 100
+  selector: app == "customer"
+  ingress:
+    - action: Allow
+      protocol: TCP
+      source: {}
+      destination:
+        ports:
+          - '80'
+    - action: Allow
+      protocol: TCP
+      source: {}
+      destination:
+        ports:
+          - '443'
+    - action: Allow
+      protocol: ICMP
+      source: {}
+      destination: {}
+  types:
+    - Ingress
+EOF
+
+```
+23. Find the pod IP address and the host it is running on. In the following case, the pod is running on worker2. We will need to ssh into the worker nodes where the pod is running and find the pod interface name to find the policies implemented for the pod interface.
+
+```
+kubectl get pods -n yaobank -l app=customer -o wide
+
+```
+
+```
+tigera@bastion:~$ kubectl get pods -n yaobank -l app=customer -o wide
+NAME                        READY   STATUS    RESTARTS   AGE   IP            NODE                                         NOMINATED NODE   READINESS GATES
+customer-74fc55b74b-cfx6x   1/1     Running   0          24m   10.48.0.211   ip-10-0-1-31.ca-central-1.compute.internal   <none>           <none>
+```
+
+
+24. ssh into the worker node where the pod is running on. In this case, we ssh into worker2. Once ssh into the node, run the following command and make sure to use the IP address of the pod in your lab environment.
+
+```
+ssh worker2
+```
+```
+ip route get <IP Address>
+```
+
+You should see an output similar to the following. Record the interface name of the pod. We will need it in the next step.
+
+```
+ubuntu@ip-10-0-1-31:~$ ip route get  10.48.0.211
+10.48.0.211 dev cali6ed10d023d2 src 10.0.1.31 uid 1000
+    cache
+```
+
+25. Now run the following command. For the name of calico-node pod, make sure to use the calico-node pod running on the node where the pod is running on. In this case, calico-node running on worker2.
+Note: The command is `kubectl exec ti calico-node -n calico-system - calico-node -bpf policy dump <interface> <hook>`. The interface is HEP/WEP interface name. `<hook> `can be one of <ingress><egress><xdp><all>
+
+```
+kubectl exec -ti calico-node-r8986 -n calico-system -- calico-node -bpf policy dump cali6ed10d023d2 ingress
+
+```
+You should see an output similar to the following. Get yourself familiar with the following output. Note how calico bpf till list the policy rules according to the order they were implemented in the policy above. 
+
+```
+tigera@bastion:~$ kubectl exec -ti calico-node-r8986 -n calico-system -- calico-node -bpf policy dump cali6ed10d023d2 ingress
+Defaulted container "calico-node" out of: calico-node, flexvol-driver (init), mount-bpffs (init), install-cni (init)
+IfaceName: cali6ed10d023d2
+Hook: tc egress
+Error:
+Policy Info:
+// Start of policy yaobank/default.customer
+// Start of rule yaobank/default.customer action:"allow" protocol:<name:"tcp" > dst_ports:<first:80 last:80 > rule_id:"E7hpHk7zWUQ_Ta1O"
+// count = 0
+// Start of rule yaobank/default.customer action:"allow" protocol:<name:"tcp" > dst_ports:<first:443 last:443 > rule_id:"TmYj24VgYbFqvCPL"
+// count = 0
+// Start of rule yaobank/default.customer action:"allow" ip_version:IPV4 protocol:<name:"icmp" > rule_id:"9m_Hu4A63RN4diia"
+// count = 0
+// Start of rule kns.yaobank action:"allow" rule_id:"noy2xpIeAbAHTZhP"
+// count = 2
+```
+
+26. Record the `count` for each rule above send some curl request and see how the count changes. Change the URL below to refer to your own lab instance
+
+```
+curl -k https://yaobank.<lab name>.training.tigera.ca
+
+```
+In this case,  4 curl requests were sent. Note that for allowed traffic, the rule shows the number of sessions, and multiple connections can be sent through the same session.
+
+```
+tigera@bastion:~$ kubectl exec -ti calico-node-r8986 -n calico-system -- calico-node -bpf policy dump cali6ed10d023d2 ingress
+Defaulted container "calico-node" out of: calico-node, flexvol-driver (init), mount-bpffs (init), install-cni (init)
+IfaceName: cali6ed10d023d2
+Hook: tc egress
+Error:
+Policy Info:
+// Start of policy yaobank/default.customer
+// Start of rule yaobank/default.customer action:"allow" protocol:<name:"tcp" > dst_ports:<first:80 last:80 > rule_id:"E7hpHk7zWUQ_Ta1O"
+// count = 1
+// Start of rule yaobank/default.customer action:"allow" protocol:<name:"tcp" > dst_ports:<first:443 last:443 > rule_id:"TmYj24VgYbFqvCPL"
+// count = 0
+// Start of rule yaobank/default.customer action:"allow" ip_version:IPV4 protocol:<name:"icmp" > rule_id:"9m_Hu4A63RN4diia"
+// count = 0
+// Start of rule kns.yaobank action:"allow" rule_id:"noy2xpIeAbAHTZhP"
+// count = 6
+```
+
+
+27. `ipsets` are key in implementing security policies. To list the `ipsets` in use on a node, run the following command.
+
+```
+kubectl exec -ti calico-node-r8986 -n calico-system -- calico-node -bpf policy dump
 
 ```
 You should see an output similar to the following. However, the list can be different depending on the available ipsets on the node.
@@ -484,7 +605,7 @@ IP set 0xdfdd106f994fdb54
    10.48.0.197/32
 ```
 
-23. To list the conntrack map, run the following command.
+28. To list the conntrack map, run the following command.
 
 ```
 kubectl exec -ti $CALICO_NODE -n calico-system -- calico-node -bpf conntrack dump
