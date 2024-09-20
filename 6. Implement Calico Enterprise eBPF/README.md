@@ -709,6 +709,11 @@ kube-proxy-gzvsb   1/1     Running   0          41s
 tc -s qdisc show | grep clsact -A 2
 
 ```
+5. Switching from `eBPF` to `iptables` dataplane is distruptive. Long-lived connections can't be recovered unless the application pods are reconnected on their own, preventing a restart. Otherwise, these pods need to be restart to recover long living connections. Use the following command to restart all the pods.
 
+```
+ kubectl delete pods -A --all --force --grace-period=0
+
+```
 
 > **Congratulations! You have completed `6. Implement Calico Enterprise eBPF` lab.**
