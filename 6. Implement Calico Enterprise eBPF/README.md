@@ -557,7 +557,7 @@ Policy Info:
 27. `ipsets` are key in implementing security policies. To list the `ipsets` in use on a node, run the following command.
 
 ```
-kubectl exec -ti calico-node-r8986 -n calico-system -- calico-node -bpf policy dump
+kubectl exec -ti calico-node-r8986 -n calico-system -- calico-node -bpf ipsets dump
 
 ```
 You should see an output similar to the following. However, the list can be different depending on the available ipsets on the node.
