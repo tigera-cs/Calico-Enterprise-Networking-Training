@@ -41,8 +41,8 @@ kind: IPPool
 metadata:
   name: egress-ippool-1
 spec:
-  cidr: 10.10.10.0/31
-  blockSize: 32
+  cidr: 10.10.10.0/30
+  blockSize: 31
   nodeSelector: "!all()"
 EOF
 
@@ -146,7 +146,7 @@ spec:
   template:
     metadata:
       annotations:
-        cni.projectcalico.org/ipv4pools: "[\"10.10.10.0/31\"]"
+        cni.projectcalico.org/ipv4pools: "[\"10.10.10.0/30\"]"
       labels:
         egress-code: red
     spec:
@@ -319,7 +319,7 @@ filter rt_import {
                         if (net ~ 10.48.2.0/24) then accept;
                         if (net ~ 10.49.0.0/16) then accept;
                         if (net ~ 10.50.0.0/24) then accept;
-                        if (net ~ 10.10.10.0/31) then accept; <-------
+                        if (net ~ 10.10.10.0/30) then accept; <-------
                         reject;
         }
 ```
